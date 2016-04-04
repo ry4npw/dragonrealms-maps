@@ -1,9 +1,10 @@
 #Getting Started
 
-1. Run grunt
+1. Run grunt connect
 
+	```bash
 	npm install
 	grunt
+	```
 
-2. Point your browser to http://localhost:8080
-
+2. Point your browser to: http://localhost:8080
