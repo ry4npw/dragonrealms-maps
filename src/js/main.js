@@ -8,7 +8,7 @@ var squareLayer, lineLayer, roomsGroup, connectors, nextConnectorId;
 
 squareLayer = new Konva.Layer();
 lineLayer = new Konva.Layer();
-connectors = []; // TODO turn connectors into a group instead of an array.
+connectors = [];
 nextConnectorId = 0;
 
 roomsGroup = new Konva.Group({
