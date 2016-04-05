@@ -212,7 +212,7 @@ $(function() {
 	addRoom(49, 128, 192, '#808080'); // Drain Pipe
 	addRoom(50, 64, 128, '#808080'); // Drain Pipe
 	addRoom(51, 0, 128, '#808080'); // Drain Pipe
-	addRoom(52, 256, 192, '#808080'); // Old Sewers
+	addRoom(52, 256, 192, '#0000FF'); // Old Sewers
 	addRoom(53, 1024, 64, '#808080'); // Prince's Chamber
 	addRoom(54, 1088, 64, '#808080'); // Balcony Remains
 	addRoom(55, 1024, 128, '#808080');
@@ -255,7 +255,7 @@ $(function() {
 	addConnector(18, 19);
 	addConnector(19, 20);
 	addConnector(20, 21);
-	addConnector(21, 22, 'go ?');
+	addConnector(21, 22, '?');
 	addConnector(23, 20, 'go door');
 	addConnector(23, 24);
 	addConnector(24, 25);
