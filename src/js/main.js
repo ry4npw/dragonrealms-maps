@@ -4,12 +4,11 @@
 var $ = require("jQuery");
 var Konva = require('konva');
 
-var squareLayer, lineLayer, roomsGroup, rooms, connectors, nextConnectorId;
+var squareLayer, lineLayer, roomsGroup, connectors, nextConnectorId;
 
 squareLayer = new Konva.Layer();
 lineLayer = new Konva.Layer();
-rooms = [];
-connectors = [];
+connectors = []; // TODO turn connectors into a group instead of an array.
 nextConnectorId = 0;
 
 roomsGroup = new Konva.Group({
@@ -24,28 +23,45 @@ function updateLines() {
 	for (var i = 0; i < connectors.length; i++) {
 		var connector = connectors[i];
 
-		connector.line.setPoints([rooms[connector.start].getAbsolutePosition().x + 8, rooms[connector.start].getAbsolutePosition().y + 8, rooms[connector.end].getAbsolutePosition().x + 8, rooms[connector.end].getAbsolutePosition().y + 8]);
+		// set start and end rooms
+		var start = roomsGroup.find("#" + connector.start)[0];
+		var startx = start.getAbsolutePosition().x;
+		var starty = start.getAbsolutePosition().y;
+		var end = roomsGroup.find("#" + connector.end)[0];
+		var endx = end.getAbsolutePosition().x;
+		var endy = end.getAbsolutePosition().y;
 
-		var x = (rooms[connector.start].getAbsolutePosition().x + rooms[connector.end].getAbsolutePosition().x + 16) / 2;
-		var y = (rooms[connector.start].getAbsolutePosition().y + rooms[connector.end].getAbsolutePosition().y + 16) / 2;
-		var dx = rooms[connector.start].getAbsolutePosition().x - rooms[connector.end].getAbsolutePosition().x;
-		var dy = rooms[connector.start].getAbsolutePosition().y - rooms[connector.end].getAbsolutePosition().y;
-		var angle = Math.atan2(dy,dx) * 180 / Math.PI;
+		// draw a line from the center of the starting room to the center of the ending room
+		connector.line.setPoints([startx + 8, starty + 8, endx + 8, endy + 8]);
 
-		if (typeof connector.fromLabel !== 'undefined') {
-			connector.fromLabel.position({
-				x: x,
-				y: y
-			});
-			connector.fromLabel.rotation(angle + 180);
-		}
+		var drawStartToEndLabel = typeof connector.startToEndLabel !== 'undefined';
+		var drawEndToStartLabel = typeof connector.endToStartLabel !== 'undefined';
 
-		if (typeof connector.toLabel !== 'undefined') {
-			connector.toLabel.position({
-				x: x,
-				y: y
-			});
-			connector.toLabel.rotation(angle);
+		if (drawStartToEndLabel || drawEndToStartLabel) {
+			// math to draw labels at the same angle as the line
+			var x = (startx + endx + 16) / 2;
+			var y = (starty + endy + 16) / 2;
+			var dx = startx - endx;
+			var dy = starty - endy;
+			var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+			// label path from start to end
+			if (drawStartToEndLabel) {
+				connector.startToEndLabel.position({
+					x: x,
+					y: y
+				});
+				connector.startToEndLabel.rotation(angle + 180); // need to rotate 180 degrees
+			}
+
+			// label return path from end to start
+			if (drawEndToStartLabel) {
+				connector.endToStartLabel.position({
+					x: x,
+					y: y
+				});
+				connector.endToStartLabel.rotation(angle);
+			}
 		}
 	}
 
@@ -62,14 +78,7 @@ function addRoom(id, x, y, color) {
 		fill: color,
 		stroke: 'black',
 		strokeWidth: 1
-		//draggable: true
 	});
-
-	//room.on('dragend', function() {
-	//	updateLines();
-	//});
-
-	rooms[id] = room;
 
 	// add the shape to the layer
 	roomsGroup.add(room);
@@ -83,61 +92,60 @@ function addBlankRoom(id, x, y) {
 		visible: false
 	});
 
-	rooms[id] = room;
-
 	// add the shape to the layer
 	roomsGroup.add(room);
 }
 
 
-function addConnector(fromRoomId, toRoomId, fromLabel, toLabel) {
+function addConnector(startRoomId, endRoomId, startToEndLabel, endToStartLabel) {
 	var id = nextConnectorId++;
 	var connector = {
-		start: fromRoomId,
-
-		end: toRoomId,
-
+		start: startRoomId, // starting room id
+		end: endRoomId, // ending room id
 		line: new Konva.Line({
-			strokeWidth: 2,
+			strokeWidth: 1,
 			stroke: 'black',
 			id: id + "-line",
 			opacity: 1,
-			points: [0, 0]
+			points: [0, 0] // points are added in updateLines()
 		}),
 	};
 
 	lineLayer.add(connector.line);
 
-	if (typeof fromLabel !== 'undefined' && fromLabel !== null) {
-		connector.fromLabel = new Konva.Text({
-			id: id + '-fromLabel',
-			text: fromLabel,
+	// label for path from starting room to ending room
+	if (typeof startToEndLabel !== 'undefined' && startToEndLabel !== null) {
+		connector.startToEndLabel = new Konva.Text({
+			id: id + '-startToEndLabel',
+			text: startToEndLabel,
 			width: 64,
 			fontSize: 9,
 			fontFamily: 'Arial',
 			fill: 'black',
 			align: 'center'
 		});
-		connector.fromLabel.setOffsetX(connector.fromLabel.attrs.width / 2);
-		connector.fromLabel.setOffsetY(16);
-		lineLayer.add(connector.fromLabel);
+		connector.startToEndLabel.setOffsetX(connector.startToEndLabel.attrs.width / 2);
+		connector.startToEndLabel.setOffsetY(16);
+		lineLayer.add(connector.startToEndLabel);
 	}
 
-	if (typeof toLabel !== 'undefined' && toLabel !== null) {
-		connector.toLabel = new Konva.Text({
-			id: id + 'toLabel',
-			text: toLabel,
+	// label for path from ending room to starting room
+	if (typeof endToStartLabel !== 'undefined' && endToStartLabel !== null) {
+		connector.endToStartLabel = new Konva.Text({
+			id: id + 'endToStartLabel',
+			text: endToStartLabel,
 			width: 64,
 			fontSize: 9,
 			fontFamily: 'Arial',
 			fill: 'black',
 			align: 'center'
 		});
-		connector.toLabel.setOffsetX(connector.fromLabel.attrs.width / 2);
-		connector.toLabel.setOffsetY(16);
-		lineLayer.add(connector.toLabel);
+		connector.endToStartLabel.setOffsetX(connector.startToEndLabel.attrs.width / 2);
+		connector.endToStartLabel.setOffsetY(16);
+		lineLayer.add(connector.endToStartLabel);
 	}
 
+	// add connector to array
 	connectors.push(connector);
 }
 
@@ -152,71 +160,71 @@ $(function() {
     });
 
 	// addRoom(roomId, x, y, color)
-	addRoom(0, 384, 0, 'gray');
-	addRoom(1, 384, 64, 'gray');
-	addRoom(2, 448, 64, 'gray'); // Entry Hall
-	addRoom(3, 512, 128, 'gray'); // Great Hall
-	addRoom(4, 448, 192, 'gray'); // Chapel of Meraud
-	addRoom(5, 576, 192, 'gray');
-	addRoom(6, 640, 192, 'gray');
-	addRoom(7, 640, 256, 'gray');
-	addRoom(8, 704, 256, 'gray'); // Broken Fountain
-	addRoom(9, 704, 128, 'gray'); // Receving Area
-	addRoom(10, 704, 64, 'gray'); // Audience Chamber
-	addRoom(11, 640, 64, 'gray'); // Throne Room
-	addRoom(12, 768, 64, 'gray');
-	addRoom(13, 768, 128, 'gray'); // Seating Area
-	addRoom(14, 768, 192, 'gray');
-	addRoom(15, 704, 192, 'gray'); // Ballroom
-	addRoom(16, 768, 256, 'gray');
-	addRoom(17, 832, 256, 'gray'); // Dining Room
-	addRoom(18, 896, 256, 'gray'); // Dining Room
-	addRoom(19, 896, 320, 'gray'); // Pantry
-	addRoom(20, 832, 320, 'gray'); // Kitchen
-	addRoom(21, 832, 384, 'gray'); // Wash Room
-	addRoom(22, 832, 448, 'gray');
-	addRoom(23, 768, 320, 'gray');
-	addRoom(24, 704, 384, 'gray'); // Grand Foyer
-	addRoom(25, 704, 448, 'gray'); // Entry Stair
-	addRoom(26, 640, 320, 'gray');
-	addRoom(27, 576, 320, 'gray'); // Library
-	addRoom(28, 576, 256, 'gray'); // Study
-	addRoom(29, 448, 448, 'gray'); // Armory
-	addRoom(30, 384, 448, 'gray');
-	addRoom(31, 448, 384, 'gray'); // Larder
-	addRoom(32, 384, 512, 'gray'); // Arched Chamber
-	addRoom(33, 448, 512, 'gray'); // Catacombs
-	addRoom(34, 384, 384, 'gray');
-	addRoom(35, 384, 320, 'gray');
-	addRoom(36, 320, 320, 'gray'); // Twisting Stair
-	addRoom(37, 320, 384, 'gray'); // Twisting Stair
-	addRoom(38, 320, 448, 'gray'); // Dungeon Guard Post
-	addRoom(39, 256, 448, 'gray'); // Dungeon Guard Barracks
-	addRoom(40, 192, 384, 'gray'); // Dungeon
-	addRoom(41, 128, 384, 'gray'); // Cell
-	addRoom(42, 256, 384, 'gray'); // Cell
-	addRoom(43, 192, 320, 'gray'); // Dungeon
-	addRoom(44, 128, 320, 'gray'); // Cell
-	addRoom(45, 256, 320, 'gray'); // Cell
-	addRoom(46, 192, 256, 'gray'); // Dungeon
-	addRoom(47, 128, 256, 'gray'); // Cell
-	addRoom(48, 256, 256, 'gray'); // Cell
-	addRoom(49, 192, 192, 'gray'); // Drain Pipe
-	addRoom(50, 128, 128, 'gray'); // Drain Pipe
-	addRoom(51, 64, 128, 'gray'); // Drain Pipe
-	addRoom(52, 320, 192, 'gray'); // Old Sewers
-	addRoom(53, 1088, 64, 'gray'); // Prince's Chamber
-	addRoom(54, 1152, 64, 'gray'); // Balcony Remains
-	addRoom(55, 1088, 128, 'gray');
-	addRoom(56, 1088, 256, 'gray'); // Sleeping Chamber
-	addRoom(57, 1088, 320, 'gray');
-	addRoom(58, 1088, 384, 'gray');
-	addRoom(59, 1024, 448, 'gray');
-	addRoom(60, 960, 384, 'gray');
-	addRoom(61, 1024, 384, 'gray');
-	addRoom(62, 1024, 320, 'gray'); // Grand Staircase
+	addRoom(0, 384, 0, '#00FF00');
+	addRoom(1, 384, 64, '#808080');
+	addRoom(2, 448, 64, '#808080'); // Entry Hall
+	addRoom(3, 512, 128, '#808080'); // Great Hall
+	addRoom(4, 448, 192, '#808080'); // Chapel of Meraud
+	addRoom(5, 576, 192, '#808080');
+	addRoom(6, 640, 192, '#808080');
+	addRoom(7, 640, 256, '#808080');
+	addRoom(8, 704, 256, '#808080'); // Broken Fountain
+	addRoom(9, 704, 128, '#808080'); // Receving Area
+	addRoom(10, 704, 64, '#808080'); // Audience Chamber
+	addRoom(11, 640, 64, '#808080'); // Throne Room
+	addRoom(12, 768, 64, '#808080');
+	addRoom(13, 768, 128, '#808080'); // Seating Area
+	addRoom(14, 768, 192, '#808080');
+	addRoom(15, 704, 192, '#808080'); // Ballroom
+	addRoom(16, 768, 256, '#808080');
+	addRoom(17, 832, 256, '#808080'); // Dining Room
+	addRoom(18, 896, 256, '#808080'); // Dining Room
+	addRoom(19, 896, 320, '#808080'); // Pantry
+	addRoom(20, 832, 320, '#808080'); // Kitchen
+	addRoom(21, 832, 384, '#808080'); // Wash Room
+	addRoom(22, 832, 448, '#808080');
+	addRoom(23, 768, 320, '#808080');
+	addRoom(24, 704, 384, '#808080'); // Grand Foyer
+	addRoom(25, 704, 448, '#808080'); // Entry Stair
+	addRoom(26, 640, 320, '#808080');
+	addRoom(27, 576, 320, '#808080'); // Library
+	addRoom(28, 576, 256, '#808080'); // Study
+	addRoom(29, 448, 448, '#808080'); // Armory
+	addRoom(30, 384, 448, '#808080');
+	addRoom(31, 448, 384, '#808080'); // Larder
+	addRoom(32, 384, 512, '#808080'); // Arched Chamber
+	addRoom(33, 448, 512, '#808080'); // Catacombs
+	addRoom(34, 384, 384, '#808080');
+	addRoom(35, 384, 320, '#808080');
+	addRoom(36, 320, 320, '#808080'); // Twisting Stair
+	addRoom(37, 320, 384, '#808080'); // Twisting Stair
+	addRoom(38, 320, 448, '#808080'); // Dungeon Guard Post
+	addRoom(39, 256, 448, '#808080'); // Dungeon Guard Barracks
+	addRoom(40, 192, 384, '#808080'); // Dungeon
+	addRoom(41, 128, 384, '#808080'); // Cell
+	addRoom(42, 256, 384, '#808080'); // Cell
+	addRoom(43, 192, 320, '#808080'); // Dungeon
+	addRoom(44, 128, 320, '#808080'); // Cell
+	addRoom(45, 256, 320, '#808080'); // Cell
+	addRoom(46, 192, 256, '#808080'); // Dungeon
+	addRoom(47, 128, 256, '#808080'); // Cell
+	addRoom(48, 256, 256, '#808080'); // Cell
+	addRoom(49, 192, 192, '#808080'); // Drain Pipe
+	addRoom(50, 128, 128, '#808080'); // Drain Pipe
+	addRoom(51, 64, 128, '#808080'); // Drain Pipe
+	addRoom(52, 320, 192, '#808080'); // Old Sewers
+	addRoom(53, 1088, 64, '#808080'); // Prince's Chamber
+	addRoom(54, 1152, 64, '#808080'); // Balcony Remains
+	addRoom(55, 1088, 128, '#808080');
+	addRoom(56, 1088, 256, '#808080'); // Sleeping Chamber
+	addRoom(57, 1088, 320, '#808080');
+	addRoom(58, 1088, 384, '#808080');
+	addRoom(59, 1024, 448, '#808080');
+	addRoom(60, 960, 384, '#808080');
+	addRoom(61, 1024, 384, '#808080');
+	addRoom(62, 1024, 320, '#808080'); // Grand Staircase
 
-	//maze
+	//invisible half rooms to make the maze
 	addBlankRoom(63, 320, 160); // n
 	addBlankRoom(64, 352, 160); // ne
 	addBlankRoom(65, 352, 192); // e
