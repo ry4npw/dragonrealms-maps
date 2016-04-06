@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "jquery": "latest",
-	"konva": "latest"
+	"konva": "latest",
+	"xml2js": "latest"
   }
 }

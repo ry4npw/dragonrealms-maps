@@ -14,7 +14,9 @@ module.exports = function(grunt) {
 		jshint: {
 			options: {
 				reporter: require('jshint-stylish'),
-				"esnext": true
+				"esnext": true,
+				ignores: ['src/js/lib/*'],
+				"predef": [ "X2JS" ]
 			},
 			all: ['Grunfile.js', 'src/js/**/*.js']
 		},
@@ -96,10 +98,11 @@ module.exports = function(grunt) {
 
 		copy: {
 			main: {
-				cwd: 'src',
-				src: '**/*.html',
-				dest: 'dist/',
-				expand: true
+				files: [
+					{expand: true, cwd: 'src/', src: '*.html', dest: 'dist/'},
+					{expand: true, cwd: 'src/maps/', src: '*.xml', dest: 'dist/maps'},
+					{expand: true, cwd: 'src/js/lib/', src: '*.min.js', dest: 'dist/js'}
+				]
 			}
 		},
 
