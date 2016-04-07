@@ -192,7 +192,7 @@ function normalizeMapPoints(genieMap) {
 
 function convertGenieConnector(roomId, zoneId, connector) {
 	if (!connector._destination) {
-		console.log("mapped exit '" + connector._exit + "' for node " + roomId + " has no destination!");
+		//console.log("mapped exit '" + connector._exit + "' for node " + roomId + " has no destination!");
 		return;
 	}
 
@@ -277,10 +277,7 @@ function getMap(name) {
 	}).responseText);
 }
 
-function stitchMaps(map) {
-	var mapList = [];
-	mapList.push(map);
-
+function stitchMaps(map, mapList, renderedMaps) {
 	if (!map || !map.zone || !map.zone.node) {
 		console.log("map is not valid!");
 		return;
@@ -292,15 +289,14 @@ function stitchMaps(map) {
 
 		if (room._note) {
 			var mapName = room._note.split('|')[0];
-			if (mapName.endsWith('xml') && !mapList[mapName]) {
+			if (mapName.endsWith('xml') && renderedMaps.indexOf(mapName) === -1) {
 				// found a linked map, align the matching rooms
-				console.log("load: " + mapName);
 				mapList[mapName] = offsetMap(room, getMap(mapName));
+				renderedMaps.push(mapName);
+				stitchMaps(mapList[mapName], mapList, renderedMaps);
 			}
 		}
 	}
-
-	return mapList;
 }
 
 function offsetMap(room1, map) {
@@ -340,7 +336,9 @@ $(function() {
 
 	// load map data
 	console.log("stitching maps");
-	var mapList = stitchMaps(getMap("Map1_Crossing.xml"));
+	var mapList = [];
+	mapList["Map1_Crossing.xml"] = normalizeMapPoints(getMap("Map1_Crossing.xml"));
+	stitchMaps(mapList["Map1_Crossing.xml"], mapList, ["Map1_Crossing.xml", "Map42_Map42_Therenborough_and_Keep.xml", "Map150_The_Ways.xml", "HollowEve.xml", "Guildfest.xml"]);
 
 	if (!mapList) {
 		console.log("failed to fetch map list");
@@ -357,9 +355,9 @@ $(function() {
 	squareLayer.add(roomsGroup);
 
 	// labels on top of squares on top of lines
-	stage.add(lineLayer);
+	//stage.add(lineLayer);
 	stage.add(squareLayer);
-	drawLines();
+	//drawLines();
 
 	if (showLabels) {
 		stage.add(labelLayer);
